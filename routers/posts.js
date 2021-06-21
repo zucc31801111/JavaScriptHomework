@@ -33,24 +33,24 @@ router.post('/addNews', async (req,res,next) => {
 });
 
 
-router.post('/addUsers', async (req,res,next) => {
+router.post('/addUsers',  (req,res,next) => {
     let addform = req.body;
     let user_name = addform.user_name
     let user_password = addform.user_password
     let user_count = addform.user_count
     console.log(addform)
-        let sql = "select * from user where user_count = ?"
+        let sql = "select * from users where user_count = ? or user_name = ?"
         console.log(sql)
-            await connection.query(sql, [user_count],  (err,result)=>{
+            connection.query(sql, [user_count,user_name],  (err,result)=>{
             console.log(result)
+            console.log(result.length)
             if(err){
                 return  res.json({code: 1, msg: '查询失败'})
             }
-            if(result===null){
-                  return  res.json({code: 1, msg: 'yicuncai',data: result})
-              }
-              else{
-                sql = "insert into user(user_name,user_password,user_count) values(?,?,?)"
+            if(result.length>0){
+                  return  res.json({code: 1, msg: '账号或者用户名已存在',data: result})
+              }else{
+                sql = "insert into users(user_name,user_password,user_count) values(?,?,?)"
                 console.log(sql)
                 connection.query(sql,[user_name,user_password,user_count],  (err,results2)=>{
                     console.log(results2)
@@ -59,6 +59,32 @@ router.post('/addUsers', async (req,res,next) => {
                     }
                     res.json({code: 200, msg: '添加信息成功',data: results2})
                 })  
+              }  
+            })                  
+});
+router.post('/login',  (req,res,next) => {
+    let addform = req.body;
+    let user_password = addform.user_password
+    let user_count = addform.user_count
+    console.log(addform)
+        let sql = "select * from users where user_count = ?"
+        console.log(sql)
+            connection.query(sql, [user_count],  (err,result)=>{
+            console.log(result)
+            console.log(result.length)
+            if(err){
+                return  res.json({code: 1, msg: '登录失败'})
+            }
+            if(result.length>0){
+                if(result[0].user_password===user_password) {
+                    res.json({code: 200, msg: '登录成功',data: result}) 
+                   }           
+                    else{
+                        return  res.json({code: 1, msg: '账号不存在或者密码不正确'})
+                    }        
+              }
+              else{
+                return  res.json({code: 1, msg: '账号不存在或者密码不正确'})
               }  
             })                  
 });
@@ -72,4 +98,55 @@ router.get('/allNews', async (req,res) => {
             res.json({code: 200, msg: '查询信息成功',data: results});
         })
 });
-module.exports = router;
+router.post('/getMsgByNews', async (req,res,next) => {
+    let addform = req.body;
+    let msg_news_id = addform.msg_news_id
+    console.log( msg_news_id)
+    console.log(addform)
+    let sql = "select * from message where msg_news_id = ? "
+        await connection.query(sql, [msg_news_id] ,(err,result)=>{
+            if(err){
+                return res.json({message: err,code: 1, msg: '查询信息失败'});
+            }
+            res.json({code: 200, msg: '查询信息成功',data: result}); 
+        }); 
+});
+router.post('/delMsgById', async (req,res,next) => {
+    let addform = req.body;
+    let msg_id = addform.msg_id
+    console.log( msg_id)
+    console.log(addform)
+    let sql = "delete from message where msg_id = ? "
+        await connection.query(sql, [msg_id] ,(err,result)=>{
+            if(err){
+                return res.json({message: err,code: 1, msg: '删除信息失败'});
+            }
+            res.json({code: 200, msg: '删除信息成功'}); 
+        }); 
+});
+router.post('/addMsg', async (req,res,next) => {
+    let addform = req.body;
+    let msg_news_id = addform.msg_news_id
+    let msg_user_name = addform.msg_user_name
+    let msg_user_toname = addform.msg_user_toname
+    let msg_msg = addform.msg_msg
+    var date = new Date();			
+    var year = date.getFullYear();        
+    var month = date.getMonth() + 1;      
+    var day = date.getDate();             
+    var hours = date.getHours();          
+    var minutes = date.getMinutes();      
+    var seconds = date.getSeconds();       
+    let msg_time = year + "-" + month + "-" + day + " " + hours + ":" + minutes + ":" + seconds;
+    console.log( msg_time)
+    console.log(addform)
+    console.log(msg_news_id)
+    let sql = "insert into message(msg_news_id,msg_user_name,msg_user_toname,msg_time,msg_msg) values(?,?,?,?,?) "
+        await connection.query(sql, [msg_news_id,msg_user_name,msg_user_toname,msg_time,msg_msg] ,(err,result)=>{
+            if(err){
+                return res.json({message: err,code: 1, msg: '添加信息失败'});
+            }
+            res.json({code: 200, msg: '添加信息成功',data:msg_time}); 
+        }); 
+});
+module.exports = router; 
